@@ -155,5 +155,6 @@ if __name__=='__main__':
     try:
         while True:
             schedule.run_pending()
+            time.sleep(1)
     except:
         log_info("exit")
