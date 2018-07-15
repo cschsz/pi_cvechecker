@@ -24,7 +24,7 @@ def log_info(info):
     return
 
 #----------------------------[send_mail]
-def send_mail(message):
+def send_mail(version, message):
     # read config
     config = configparser.ConfigParser()
     config.read('/usr/local/etc/cvechecker.ini')
@@ -49,7 +49,7 @@ def send_mail(message):
 
     # prepare email
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "cvechecker"
+    msg['Subject'] = "cvechecker " + version
     msg['From'] = email
     msg['To'] = dest
 
@@ -85,7 +85,7 @@ def readfile(filename):
 #----------------------------[readdb]
 def readdb(version, array):
     try:
-        resp = req.get("https://maxtruxa.com/cvedb-dev/api/test?vendor=linux&product=linux_kernel&version={:s}&findonly".format(version))
+        resp = req.get("https://maxtruxa.com/cvedb-dev/api/test?vendor=linux&product=linux_kernel&version={:s}&findonly&limit=250".format(version))
     except Exception:
         log_info("{:s}: error reading db...".format(version))
         return -1
@@ -105,12 +105,17 @@ def readdb(version, array):
 #----------------------------[getnew]
 def getnew(old, cve, new):
     result = ""
+    newflag = False
     for i in range(0, len(cve)):
         try:
             old.index(cve[i])
         except ValueError:
             new.append(cve[i])
             result += "new: " + cve[i] + "<br>"
+            newflag = True
+
+    if newflag == True:
+        result += "<p>{:d} old, {:d} cve, {:d} new</p>".format(len(old), len(cve), len(new))
     return result
 
 #----------------------------[checkcve]
@@ -129,15 +134,15 @@ def checkcve(version):
     ret = readdb(version, cve)
     if ret:
         message += "error reading database...<br>"
-
-    # result
-    message += getnew(old, cve, new)
-    log_info("{:s}: {:d} old, {:d} cve, {:d} new".format(version, len(old), len(cve), len(new)))
+        log_info("{:s}: error reading database".format(version))
+    else:
+        message += getnew(old, cve, new)
+        log_info("{:s}: {:d} old, {:d} cve, {:d} new".format(version, len(old), len(cve), len(new)))
 
     # send mail
-    if len(message):
-        message += "<p>{:s}</p>".format(file)
-        ret = send_mail(message)
+    if len(message) > 0:
+        message += "<p>{:s}</p>".format(version)
+        ret = send_mail(version, message)
         if ret == 0:
             with open(file, 'wb') as fp:
                 pickle.dump(cve, fp)
