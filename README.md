@@ -1,5 +1,5 @@
 # cvechecker
-parses cvedetails.com for new CVEs
+Uses https://maxtruxa.com/cvedb to check for new CVEs
 
 Programm logging is found in /var/log/cvechecler.log
 
@@ -14,7 +14,7 @@ python3 cvechecker.py
 ```
 If already "installed" execute this before running from console:
 ```
-ps -aux | grep  python3 /usr/local/bin/cvechecker.py
+ps -aux | grep  python3 cvechecker.py
 sudo kill [pid]
 ```
 
@@ -33,12 +33,11 @@ http://rpi.science.uoit.ca/lab/gpio/
 
 ## Installation
 ```
-sudo chmod +x install.sh
-./install.sh
+sudo ./install.sh
 ```
 for email notification fill the variables in /usr/local/etc/cvechecker.ini
 
 add in /etc/rc.local before the last line (exit 0):
 ```
-/usr/local/bin/cvechecker.py &
+/usr/local/bin/cvechecker/cvechecker.py &
 ```
