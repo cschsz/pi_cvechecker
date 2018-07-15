@@ -7,6 +7,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import requests as req
+import gpio
 import pickle
 import time
 
@@ -102,7 +103,7 @@ def readurl(url, array):
         pos += 1
         end = string.find("<", pos)
         array.append(string[pos:end])
-    
+
     return 0
 
 #----------------------------[getreadurlold]
@@ -132,7 +133,7 @@ def checkcve(file, urls):
     log_info("{:d} old".format(len(old)))
     log_info("{:d} cve".format(len(cve)))
     log_info("{:d} new".format(len(new)))
-        
+
     if len(message):
         message += "<p>{:s}</p>".format(file)
         ret = send_mail(message)
@@ -145,16 +146,23 @@ def checkcve(file, urls):
 def once_a_day():
     log_info("once_a_day")
     checkcve("3_18_14.lst", url_3_18_14)
-    return    
+    return
 
-#----------------------------[]     
+#----------------------------[]
 if __name__=='__main__':
+    val = 0
     log_info("starting")
+    gpio.init()
     once_a_day()
     schedule.every().day.at("08:00").do(once_a_day)
     try:
         while True:
             schedule.run_pending()
+            gpio.led(val)
+            if val == 1:
+                val = 0
+            else:
+                val = 1
             time.sleep(1)
     except:
         log_info("exit")
