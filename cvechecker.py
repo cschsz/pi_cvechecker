@@ -8,13 +8,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import requests as req
 import gpio
+import json
 import pickle
 import time
-
-#"https://www.cvedetails.com/json-feed.php?vendor_id=33&product_id=47&version_id=194147&numrows=30&year=2012"
-
-url_3_18_14 = ["https://www.cvedetails.com/vulnerability-list.php?vendor_id=33&product_id=47&version_id=194147&page=1&hasexp=0&opdos=0&opec=0&opov=0&opcsrf=0&opgpriv=0&opsqli=0&opxss=0&opdirt=0&opmemc=0&ophttprs=0&opbyp=0&opfileinc=0&opginf=0&cvssscoremin=0&cvssscoremax=0&year=0&month=0&cweid=0&order=1&trc=54&sha=e856f0294fda1cb68c232f5adb0ee7e79a7c426e",
-               "https://www.cvedetails.com/vulnerability-list.php?vendor_id=33&product_id=47&version_id=194147&page=2&hasexp=0&opdos=0&opec=0&opov=0&opcsrf=0&opgpriv=0&opsqli=0&opxss=0&opdirt=0&opmemc=0&ophttprs=0&opbyp=0&opfileinc=0&opginf=0&cvssscoremin=0&cvssscoremax=0&year=0&month=0&cweid=0&order=1&trc=66&sha=7e081e66188691d3dd7bac57f4531821702dc570"]
 
 #----------------------------[log_info]
 def log_info(info):
@@ -47,8 +43,8 @@ def send_mail(message):
         s = smtplib.SMTP(host, port)
         s.starttls()
         s.login(email, passw)
-    except Exception:
-        log_info("SMTP error: " + traceback.format_exc())
+    except Exception as e:
+        log_info("SMTP error: " + str(e))
         return -1
 
     # prepare email
@@ -71,7 +67,7 @@ def send_mail(message):
         s.quit()
         log_info("email send")
     except Exception as e:
-        log_info("SMTP error:" + e)
+        log_info("SMTP error:" + str(e))
         return -1
 
     return 0
@@ -86,27 +82,27 @@ def readfile(filename):
         pass
     return array
 
-#----------------------------[getreadurlold]
-def readurl(url, array):
+#----------------------------[readdb]
+def readdb(version, array):
     try:
-        resp = req.get(url)
+        resp = req.get("https://maxtruxa.com/cvedb-dev/api/test?vendor=linux&product=linux_kernel&version={:s}&findonly".format(version))
     except Exception:
-        log_info("error reading url: {:.120s}...".format(url))
+        log_info("{:s}: error reading db...".format(version))
         return -1
 
-    string = resp.text
-    pos = 0
-    while True:
-        pos = string.find(">CVE-", pos)
-        if pos == -1:
-            break
-        pos += 1
-        end = string.find("<", pos)
-        array.append(string[pos:end])
+    try:
+        data = json.loads(resp.text)
+        for cve in data["cves"]:
+            array.append(cve["id"])
+    except Exception as e:
+        log_info("{:s}: json error {:s}".format(version, str(e)))
 
-    return 0
+    if len(array) == 0:
+        return -1
+    else:
+        return 0
 
-#----------------------------[getreadurlold]
+#----------------------------[getnew]
 def getnew(old, cve, new):
     result = ""
     for i in range(0, len(cve)):
@@ -117,23 +113,28 @@ def getnew(old, cve, new):
             result += "new: " + cve[i] + "<br>"
     return result
 
-#----------------------------[getreadurlold]
-def checkcve(file, urls):
+#----------------------------[checkcve]
+def checkcve(version):
     message = ""
     new=[]
     cve=[]
 
+    # filename
+    file = version
+    file.replace(".", "_")
+    file += ".lst"
+
+    # read cve
     old = readfile(file)
-    for url in urls:
-        ret = readurl(url, cve)
-        if ret:
-            message += "error reading url: {:.120s}...<br>".format(url)
+    ret = readdb(version, cve)
+    if ret:
+        message += "error reading database...<br>"
 
+    # result
     message += getnew(old, cve, new)
-    log_info("{:d} old".format(len(old)))
-    log_info("{:d} cve".format(len(cve)))
-    log_info("{:d} new".format(len(new)))
+    log_info("{:s}: {:d} old, {:d} cve, {:d} new".format(version, len(old), len(cve), len(new)))
 
+    # send mail
     if len(message):
         message += "<p>{:s}</p>".format(file)
         ret = send_mail(message)
@@ -145,7 +146,20 @@ def checkcve(file, urls):
 #----------------------------[once_a_day]
 def once_a_day():
     log_info("once_a_day")
-    checkcve("3_18_14.lst", url_3_18_14)
+
+    num = 1
+    while True:
+        config = configparser.ConfigParser()
+        config.read('/usr/local/etc/cvechecker.ini')
+        try:
+            entry = "VERSION{:02d}".format(num)
+            version  = str(config["CVE"][entry])
+            version = version.strip("\"")
+            checkcve(version)
+            num += 1
+        except KeyError:
+            break
+
     return
 
 #----------------------------[]
