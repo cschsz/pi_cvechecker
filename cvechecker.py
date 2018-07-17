@@ -85,7 +85,7 @@ def readfile(filename):
 #----------------------------[readdb]
 def readdb(version, array):
     try:
-        resp = req.get("https://maxtruxa.com/cvedb-dev/api/test?vendor=linux&product=linux_kernel&version={:s}&findonly&limit=250".format(version))
+        resp = req.get("https://maxtruxa.com/cvedb-dev/api/cves?vendor=linux&product=linux_kernel&version={:s}&limit=250".format(version))
     except Exception:
         log_info("{:s}: error reading db...".format(version))
         return -1
