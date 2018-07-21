@@ -84,18 +84,26 @@ def readfile(filename):
 
 #----------------------------[readdb]
 def readdb(version, array):
-    try:
-        resp = req.get("https://maxtruxa.com/cvedb-dev/api/cves?vendor=linux&product=linux_kernel&version={:s}&limit=250".format(version))
-    except Exception:
-        log_info("{:s}: error reading db...".format(version))
-        return -1
+    url = "https://maxtruxa.com/cvedb-dev/api/cves?vendor=linux&product=linux_kernel&version={:s}".format(version)
+    while True:
+        try:
+            resp = req.get(url)
+        except Exception:
+            log_info("{:s}: error reading db...".format(version))
+            return -1
 
-    try:
-        data = json.loads(resp.text)
-        for cve in data["cves"]:
-            array.append(cve["id"])
-    except Exception as e:
-        log_info("{:s}: json error {:s}".format(version, str(e)))
+        try:
+            data = json.loads(resp.text)
+            for cve in data["cves"]:
+                array.append(cve["id"])
+
+            link = data["links"]
+            url = link["next"]
+            if url == None:
+                break
+        except Exception as e:
+            log_info("{:s}: json error {:s}".format(version, str(e)))
+            return -1
 
     if len(array) == 0:
         return -1
