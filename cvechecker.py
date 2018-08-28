@@ -72,6 +72,28 @@ def send_mail(version, message):
 
     return 0
 
+#----------------------------[checkdatabase]
+def checkdatabase():
+    try:
+        resp = req.get("https://maxtruxa.com/cvedb-dev/api")
+    except Exception:
+        log_info("api: error reading db...")
+        send_mail("api", "error reading db")
+        return -1
+
+    try:
+        data = json.loads(resp.text)
+
+        lupdate = data["last_update"]
+        date = datetime.datetime.strptime(lupdate[:10], "%Y-%m-%d")
+        ctime = datetime.datetime.today() - datetime.timedelta(days=2)
+        if date < ctime:
+            send_mail("api", "update error")
+    except Exception as e:
+        log_info("api: json error")
+        send_mail("api", "json error")
+        return -1
+
 #----------------------------[readfile]
 def readfile(filename):
     array=[]
@@ -160,6 +182,7 @@ def checkcve(version):
 def once_a_day():
     log_info("once_a_day")
 
+    checkdatabase()
     num = 1
     while True:
         config = configparser.ConfigParser()
