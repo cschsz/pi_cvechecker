@@ -165,9 +165,11 @@ def checkcve(version):
     if ret:
         message += "error reading database...<br>"
         log_info("{:s}: error reading database".format(version))
-    else:
-        message += getnew(old, cve, new)
-        log_info("{:s}: {:d} old, {:d} cve, {:d} new".format(version, len(old), len(cve), len(new)))
+        send_mail(version, message)
+        return
+
+    message += getnew(old, cve, new)
+    log_info("{:s}: {:d} old, {:d} cve, {:d} new".format(version, len(old), len(cve), len(new)))
 
     # send mail
     if len(message) > 0:
