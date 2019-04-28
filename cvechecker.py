@@ -205,6 +205,13 @@ if __name__=='__main__':
     val = 0
     log_info("starting")
     gpio.init()
+    for i in range (120):
+        gpio.led(val)
+        if val == 1:
+            val = 0
+        else:
+            val = 1
+        time.sleep(0.5)
     once_a_day()
     schedule.every().day.at("08:00").do(once_a_day)
     try:
