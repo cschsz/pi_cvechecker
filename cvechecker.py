@@ -75,7 +75,7 @@ def send_mail(version, message):
 #----------------------------[checkdatabase]
 def checkdatabase():
     try:
-        resp = req.get("https://maxtruxa.com/cvedb-dev/api")
+        resp = req.get("https://api.maxtruxa.com/cvedb")
     except Exception:
         log_info("api: error reading db...")
         send_mail("api", "error reading db")
