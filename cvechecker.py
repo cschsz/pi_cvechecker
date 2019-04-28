@@ -106,7 +106,7 @@ def readfile(filename):
 
 #----------------------------[readdb]
 def readdb(version, array):
-    url = "https://maxtruxa.com/cvedb-dev/api/cves?vendor=linux&product=linux_kernel&version={:s}".format(version)
+    url = "https://api.maxtruxa.com/cvedb/cves?vendor=linux&product=linux_kernel&version={:s}".format(version)
     while True:
         try:
             resp = req.get(url)
